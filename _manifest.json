@@ -1,0 +1,42 @@
+{
+  "manifest_version": 2,
+  "id": "maibot.speaker-map",
+  "version": "1.0.0",
+  "name": "发言者身份对照",
+  "description": "在 Planner / Replyer 请求前给消息补稳定 uid、给自己发的消息补 is_self_message，并注入发言者对照表与事实校正，缓解同名、改名、把自己的话当成别人等错认问题。",
+  "author": {
+    "name": "deepseekv41flash",
+    "url": "https://github.com/deepseekv41flash"
+  },
+  "license": "MIT",
+  "urls": {
+    "repository": "https://github.com/deepseekv41flash/maibot-speaker-map",
+    "documentation": "https://github.com/deepseekv41flash/maibot-speaker-map#readme"
+  },
+  "host_application": {
+    "min_version": "1.3.0",
+    "max_version": "999.999.999"
+  },
+  "sdk": {
+    "min_version": "2.10.0",
+    "max_version": "999.999.999"
+  },
+  "dependencies": [],
+  "capabilities": [
+    "message.get_recent",
+    "database.get",
+    "send.text"
+  ],
+  "i18n": {
+    "default_locale": "zh-CN",
+    "supported_locales": [
+      "zh-CN"
+    ]
+  },
+  "display": {
+    "icon": {
+      "type": "lucide",
+      "value": "users"
+    }
+  }
+}

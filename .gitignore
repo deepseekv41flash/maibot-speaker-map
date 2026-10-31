@@ -1,0 +1,19 @@
+# 插件运行期生成的本地配置，禁止提交
+/config.toml
+# 本机部署专用的事实校正，禁止提交
+/local_facts.txt
+
+# Python 产物
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 测试与工具缓存
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# 本地数据与日志
+/data/
+*.log
