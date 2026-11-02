@@ -281,6 +281,7 @@ class SpeakerMapPlugin(MaiBotPlugin):
             or stats.get("uid", 0) > 0
             or stats.get("group_card", 0) > 0
             or stats.get("self", 0) > 0
+            or stats.get("changed_items", 0) > 0
         )
         if not changed:
             return {"action": "continue", "modified_kwargs": kwargs}

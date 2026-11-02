@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "id": "maibot.speaker-map",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "name": "发言者身份对照",
   "description": "在 Planner / Replyer 请求前给消息补稳定 uid、给自己发的消息补 is_self_message，并注入发言者对照表与事实校正，缓解同名、改名、把自己的话当成别人等错认问题。",
   "author": {

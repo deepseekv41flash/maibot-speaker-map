@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import html
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -155,6 +156,40 @@ def _escape(value: str) -> str:
     return html.escape(str(value or ""), quote=True)
 
 
+# 不可见字符：零宽、BOM、变体选择符，以及 U+E0000–U+E007F 的 tag 字符。
+_INVISIBLE_CHARS = frozenset({"\u200b", "\u200c", "\u200d", "\u2060", "\ufeff", "\ufe0e", "\ufe0f"})
+
+
+def is_displayable_name(value: object) -> bool:
+    """判断昵称/群名片是否能被模型看见（排除空串和纯不可见字符）。"""
+
+    text = html.unescape(str(value or "")).strip()
+    if not text:
+        return False
+    visible = "".join(
+        ch
+        for ch in text
+        if ch not in _INVISIBLE_CHARS and unicodedata.category(ch)[0] not in {"C", "Z"}
+    )
+    return bool(visible.strip())
+
+
+def display_speaker_name(value: object, uid: str) -> str:
+    """名字不可见时退化成稳定可读的“用户<uid>”，避免模型拿上一个说话人补空。"""
+
+    text = str(value or "").strip()
+    if is_displayable_name(text):
+        return text
+    return f"用户{uid}" if str(uid or "").strip() else "群友"
+
+
+def _replace_attr(attrs: str, name: str, value: str) -> str:
+    """替换开标签里某个属性的值；属性不存在时原样返回。"""
+
+    pattern = re.compile(rf'({re.escape(name)}\s*=\s*")([^"]*)(")')
+    return pattern.sub(lambda m: f"{m.group(1)}{_escape(value)}{m.group(3)}", attrs, count=1)
+
+
 def _enrich_attrs(
     attrs: str,
     directory: SpeakerDirectory | None,
@@ -163,11 +198,21 @@ def _enrich_attrs(
     *,
     fill_group_card: bool,
 ) -> tuple[str, int, int, int]:
-    """给一个开标签属性串补 uid / group_card / is_self_message。"""
+    """给一个开标签属性串补 uid / group_card / is_self_message，并修正不可见名字。"""
 
     msg_id = attr_value(attrs, "msg_id")
     identity = directory.identity(msg_id) if (directory is not None and msg_id) else None
     uid = identity.uid if identity is not None else ""
+
+    # 先处理不可见名字：user 为空/纯不可见字符时，模型会把它当成“上一条消息的人”。
+    user_name = attr_value(attrs, "user")
+    if not is_displayable_name(user_name):
+        user_name = display_speaker_name(user_name, uid)
+        attrs = _replace_attr(attrs, "user", user_name)
+
+    card_name = attr_value(attrs, "group_card")
+    if card_name and not is_displayable_name(card_name):
+        attrs = _replace_attr(attrs, "group_card", display_speaker_name(card_name, uid))
 
     additions: list[str] = []
     added_uid = added_card = added_self = 0
@@ -182,7 +227,6 @@ def _enrich_attrs(
 
     already_self = attr_value(attrs, "is_self_message").strip().lower() == "true"
     if not already_self:
-        user_name = attr_value(attrs, "user")
         if uid and uid in bot_ids:
             additions.append('is_self_message="true"')
             added_self = 1
@@ -191,7 +235,7 @@ def _enrich_attrs(
             added_self = 1
 
     if not additions:
-        return f"<message{attrs}>", 0, 0, 0
+        return f"<message{attrs}>", added_uid, added_card, added_self
     return f"<message{attrs} {' '.join(additions)}>", added_uid, added_card, added_self
 
 
@@ -358,26 +402,28 @@ def extract_bot_names(system_text: str) -> list[str]:
 
 
 def _format_person_line(person: Person, *, is_bot: bool, bot_names: Sequence[str]) -> str:
+    nickname = display_speaker_name(person.nickname, person.uid)
+    card = display_speaker_name(person.card, person.uid) if person.card else ""
     if is_bot:
         labels: list[str] = []
         if person.nickname:
-            labels.append(f"昵称 {person.nickname}")
+            labels.append(f"昵称 {nickname}")
         extras = [name for name in bot_names if name and name != person.nickname]
         if extras:
             labels.append("也叫 " + "、".join(extras))
-        if person.card and person.card != person.nickname:
-            labels.append(f"群名片 {person.card}")
+        if card and card != nickname:
+            labels.append(f"群名片 {card}")
         detail = "；".join(labels) if labels else "机器人"
         return f"- uid={person.uid}：这是你自己（{detail}）"
 
     labels = []
     if person.nickname:
-        labels.append(f"昵称 {person.nickname}")
-    if person.card and person.card != person.nickname:
-        labels.append(f"群名片 {person.card}")
-    elif person.card and person.card == person.nickname:
+        labels.append(f"昵称 {nickname}")
+    if card and card != nickname:
+        labels.append(f"群名片 {card}")
+    elif card and card == nickname:
         labels.append("昵称与群名片相同")
-    aliases = person.aliases()
+    aliases = [alias for alias in person.aliases() if is_displayable_name(alias)]
     if aliases:
         labels.append("曾用 " + "、".join(aliases))
     detail = "；".join(labels) if labels else "名字未知"

@@ -68,6 +68,21 @@ class SpeakerMapTests(unittest.TestCase):
         )
         self.assertEqual(names, ["BotName", "BotPlatformName", "BotGroupCard"])
 
+    def test_invisible_name_fallback(self) -> None:
+        invisible = "\U000e0021"
+        self.directory.by_message["m-inv"] = sm.Identity(uid="3003", nickname=invisible, timestamp=14.0)
+        person = sm.Person(uid="3003")
+        person.touch(invisible, "", 14.0)
+        self.directory.people["3003"] = person
+
+        text = f'<message msg_id="m-inv" user="{invisible}">\nhi'
+        new_text, _ = sm.enrich_message_tags(text, self.directory, set(), set())
+        self.assertIn('user="用户3003"', new_text)
+        self.assertIn('uid="3003"', new_text)
+
+        legend = sm.build_legend(self.directory, {"3003"}, set(), [], max_people=8)
+        self.assertIn("uid=3003：昵称 用户3003", legend)
+
 
 if __name__ == "__main__":
     unittest.main()

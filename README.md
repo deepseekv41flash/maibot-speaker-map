@@ -196,16 +196,22 @@ i = mod.create_plugin(); print(type(i).__name__, [c.get('name') for c in i.get_c
 | 项 | 值 |
 |---|---|
 | 插件 ID | `maibot.speaker-map` |
-| 版本 | `1.0.1` |
+| 版本 | `1.0.2` |
 | 作者 | deepseekv41flash |
 | 仓库 | https://github.com/deepseekv41flash/maibot-speaker-map |
 | 许可证 | MIT |
 
 插件市场按 **Release 版本**收录，Tag 与 `_manifest.json` 的 `version` 必须一致
-（`v1.0.1` ↔ `1.0.1`）。`host_application` / `sdk` 的上界按官方建议置于
+（`v1.0.2` ↔ `1.0.2`）。`host_application` / `sdk` 的上界按官方建议置于
 `999.999.999`，只认真约束 `min_version`。
 
 ## 11. 变更记录
+
+### 1.0.2
+
+- 修复不可见昵称导致的串人：`user`/`group_card` 为空或纯不可见字符（零宽、BOM、tag 字符）时，
+  自动退化为稳定的 `用户<uid>`，并在身份表里同样显示；
+- 这类昵称以前会让模型把发言者补成上一条消息的人（例如把 A 的话算到 B 头上）。
 
 ### 1.0.1
 
