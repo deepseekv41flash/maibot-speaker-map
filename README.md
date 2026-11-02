@@ -102,8 +102,8 @@ git clone https://github.com/deepseekv41flash/maibot-speaker-map.git \
 
 | 字段 | 默认 | 说明 |
 |---|---|---|
-| `recent_message_limit` | `500` | 建索引时读多少条最近消息 |
-| `cache_ttl_seconds` | `15` | 身份索引缓存秒数 |
+| `recent_message_limit` | `80` | 建索引时读多少条最近消息；越大 RPC 负载越大 |
+| `cache_ttl_seconds` | `30` | 身份索引缓存秒数 |
 | `debug_log` | `false` | 每次注入打一条 info 日志 |
 
 ### 事实校正怎么写
@@ -158,6 +158,8 @@ authoritative_facts = [
   （`message.get_recent` / `database.get` / `send.text`），不能写 `message`、`database` 这种分类名。
 - 对照表里没有某人：他不在最近 `recent_message_limit` 条消息里，或本条 prompt 没引用他的 msg_id。
 - 改了 `config.toml` 想立即生效：WebUI 热重载，或重启宿主。
+- 日志出现 `读取最近消息超时`：本轮没有 uid 对照表，但规则与事实校正仍在；
+  可以把 `recent_message_limit` 再调小，或等缓存过期后重试。
 
 ## 8. 开发与测试
 
@@ -194,16 +196,22 @@ i = mod.create_plugin(); print(type(i).__name__, [c.get('name') for c in i.get_c
 | 项 | 值 |
 |---|---|
 | 插件 ID | `maibot.speaker-map` |
-| 版本 | `1.0.0` |
+| 版本 | `1.0.1` |
 | 作者 | deepseekv41flash |
 | 仓库 | https://github.com/deepseekv41flash/maibot-speaker-map |
 | 许可证 | MIT |
 
 插件市场按 **Release 版本**收录，Tag 与 `_manifest.json` 的 `version` 必须一致
-（`v1.0.0` ↔ `1.0.0`）。`host_application` / `sdk` 的上界按官方建议置于
+（`v1.0.1` ↔ `1.0.1`）。`host_application` / `sdk` 的上界按官方建议置于
 `999.999.999`，只认真约束 `min_version`。
 
 ## 11. 变更记录
+
+### 1.0.1
+
+- 修复 Hook 超时：`message.get_recent` 默认只取 80 条（原来 500 条，RPC 载荷可达数十 MB）；
+- 取数加 3.5s 内部超时，超时后本轮退化为“只有规则与事实校正”，不再被宿主 5s 超时打断；
+- 身份索引缓存从 15s 调到 30s，减少重复查询。
 
 ### 1.0.0
 

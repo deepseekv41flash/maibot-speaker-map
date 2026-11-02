@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from pathlib import Path
 from typing import Any
@@ -30,6 +31,9 @@ from .speaker_map import (
 )
 
 BOT_ACCOUNT_CACHE_SECONDS = 300.0
+# 单次取最近消息的内部超时：留出余量，避免整个 Hook 被宿主 5s 超时干掉。
+# 超时后本轮退化为“只有规则/事实校正、没有 uid 对照表”，不会阻断聊天。
+RECENT_FETCH_TIMEOUT_SECONDS = 3.5
 
 
 class PluginSection(PluginConfigBase):
@@ -88,11 +92,11 @@ class RuntimeSection(PluginConfigBase):
     __ui_order__ = 2
 
     recent_message_limit: int = Field(
-        default=500,
-        description="每次建立身份索引时读取的最近消息条数",
+        default=80,
+        description="每次建立身份索引时读取的最近消息条数；越大 RPC 负载越大，建议 60–120",
     )
     cache_ttl_seconds: int = Field(
-        default=15,
+        default=30,
         description="同一会话身份索引的缓存秒数；越小越实时，越大越省数据库查询",
     )
     debug_log: bool = Field(
@@ -319,7 +323,15 @@ class SpeakerMapPlugin(MaiBotPlugin):
 
         limit = max(20, int(self.config.runtime.recent_message_limit))
         try:
-            result = await self.ctx.message.get_recent(session_id, limit=limit)
+            result = await asyncio.wait_for(
+                self.ctx.message.get_recent(session_id, limit=limit),
+                timeout=RECENT_FETCH_TIMEOUT_SECONDS,
+            )
+        except TimeoutError:
+            self.ctx.logger.warning(
+                f"读取最近消息超时（>{RECENT_FETCH_TIMEOUT_SECONDS}s），本轮只注入规则与事实校正: session={session_id} limit={limit}"
+            )
+            return []
         except Exception as exc:  # noqa: BLE001 - 宿主能力失败不应影响聊天
             self.ctx.logger.debug(f"读取最近消息失败: session={session_id} error={exc}")
             return []
