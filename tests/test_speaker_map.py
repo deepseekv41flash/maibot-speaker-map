@@ -68,6 +68,17 @@ class SpeakerMapTests(unittest.TestCase):
         )
         self.assertEqual(names, ["BotName", "BotPlatformName", "BotGroupCard"])
 
+    def test_speech_rules(self) -> None:
+        legend = sm.build_legend(
+            self.directory,
+            {"1001"},
+            {"1001"},
+            ["BotName"],
+            speech_rules=["只有 Boss 能被称作“主人”"],
+        )
+        self.assertIn("称呼规则", legend)
+        self.assertIn("只有 Boss 能被称作“主人”", legend)
+
     def test_invisible_name_fallback(self) -> None:
         invisible = "\U000e0021"
         self.directory.by_message["m-inv"] = sm.Identity(uid="3003", nickname=invisible, timestamp=14.0)

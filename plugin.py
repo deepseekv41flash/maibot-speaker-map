@@ -82,6 +82,10 @@ class IdentitySection(PluginConfigBase):
         default="local_facts.txt",
         description="数据目录下的事实校正文件（一行一条，# 开头忽略）；放不适合写进仓库的本地事实，留空则关闭",
     )
+    speech_rules: list[str] = Field(
+        default_factory=list,
+        description="称呼规则，一行一条，以高优先级注入，例如：只有 Boss 能被称作“主人”，对别人不要用这个称呼",
+    )
 
 
 class RuntimeSection(PluginConfigBase):
@@ -270,6 +274,7 @@ class SpeakerMapPlugin(MaiBotPlugin):
                 self._bot_names or sorted(self._self_names),
                 max_people=max(1, int(self.config.identity.max_people_in_legend)),
                 authoritative_facts=self._collect_authoritative_facts(),
+                speech_rules=self.config.identity.speech_rules,
             )
             position = str(self.config.identity.legend_position or "last_user").strip().lower()
             if position not in {"last_user", "system"}:

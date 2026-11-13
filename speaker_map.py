@@ -438,6 +438,7 @@ def build_legend(
     *,
     max_people: int = 8,
     authoritative_facts: Sequence[str] = (),
+    speech_rules: Sequence[str] = (),
 ) -> str:
     """生成「发言者身份对照」提示块。"""
 
@@ -455,6 +456,12 @@ def build_legend(
     else:
         lines.append("4. 摘要里以你的名字为主语的描述，说的都是你自己，不是第三个人。")
     lines.append("5. 摘要、记忆、人物画像里的人名与本表冲突时，以本表 uid 为准。")
+
+    rules = [str(rule).strip() for rule in speech_rules if str(rule).strip()]
+    if rules:
+        lines.append("称呼规则（写回复时必须遵守）：")
+        for rule in rules:
+            lines.append(f"- {rule}")
 
     people: list[tuple[Person, bool]] = []
     fact_uids: set[str] = set()

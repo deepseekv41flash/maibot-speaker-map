@@ -97,6 +97,7 @@ git clone https://github.com/deepseekv41flash/maibot-speaker-map.git \
 | `max_people_in_legend` | `8` | 身份表最多列多少人（bot 自己不计） |
 | `authoritative_facts` | `[]` | 事实校正，一行一条 |
 | `authoritative_facts_file` | `local_facts.txt` | 数据目录下的事实文件；留空关闭 |
+| `speech_rules` | `[]` | 称呼规则，一行一条，以高优先级注入（例如“主人”只能称呼谁） |
 
 ### `[runtime]`
 
@@ -196,16 +197,22 @@ i = mod.create_plugin(); print(type(i).__name__, [c.get('name') for c in i.get_c
 | 项 | 值 |
 |---|---|
 | 插件 ID | `maibot.speaker-map` |
-| 版本 | `1.0.2` |
+| 版本 | `1.0.3` |
 | 作者 | deepseekv41flash |
 | 仓库 | https://github.com/deepseekv41flash/maibot-speaker-map |
 | 许可证 | MIT |
 
 插件市场按 **Release 版本**收录，Tag 与 `_manifest.json` 的 `version` 必须一致
-（`v1.0.2` ↔ `1.0.2`）。`host_application` / `sdk` 的上界按官方建议置于
+（`v1.0.3` ↔ `1.0.3`）。`host_application` / `sdk` 的上界按官方建议置于
 `999.999.999`，只认真约束 `min_version`。
 
 ## 11. 变更记录
+
+### 1.0.3
+
+- 新增 `speech_rules` 称呼规则：可把“只有 X 能被称作主人”“对别人不要用某个称呼”
+  这类规则以高优先级注入提示词，专门处理“叫别人主人/叫错称呼”；
+- 规则渲染在对照表规则区、身份表之前，Planner 与 Replyer 都会看到。
 
 ### 1.0.2
 
